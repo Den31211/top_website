@@ -1,0 +1,149 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f1eb">
+  <title>Кадр — кино и сериалы</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'core/site.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{% url 'home' %}" aria-label="Кадр — главная">
+      <span class="brand-mark">К</span><span>кадр<span class="brand-period">.</span></span>
+    </a>
+    <nav class="main-nav" aria-label="Основная навигация">
+      <a class="nav-link is-active" href="{% url 'home' %}">Каталог</a>
+      <a class="nav-link" href="{% url 'home' %}?type=movie">Фильмы</a>
+      <a class="nav-link" href="{% url 'home' %}?type=series">Сериалы</a>
+      <a class="nav-link" href="{% url 'home' %}?type=cartoon">Мультфильмы</a>
+    </nav>
+    {% if user.is_authenticated %}
+      <div class="account-actions"><span class="user-label">{{ user.username }}</span><form method="post" action="{% url 'account-logout' %}">{% csrf_token %}<button class="logout-button" type="submit">Выйти</button></form></div>
+    {% else %}
+      <div class="account-actions"><a class="header-action" href="{% url 'account-login' %}"><span class="header-action-label">Войти</span><span class="arrow-icon" aria-hidden="true">↗</span></a><a class="register-link" href="{% url 'account-register' %}">Регистрация</a></div>
+    {% endif %}
+  </header>
+
+  <main>
+    <section class="catalog-intro">
+      <div class="intro-copy">
+        <p class="eyebrow"><span class="eyebrow-dot"></span> КАТАЛОГ / КИНО И СЕРИАЛЫ</p>
+        <h1>Выбирайте<br><em>свой следующий</em> кадр.</h1>
+        <p class="intro-note">Фильмы и сериалы, к которым хочется вернуться.</p>
+      </div>
+      <div class="catalog-stats" aria-label="Размер каталога">
+        <div><strong>{{ movie_count }}</strong><span>фильмов</span></div>
+        <i></i>
+        <div><strong>{{ series_count }}</strong><span>сериалов</span></div>
+        <i></i>
+        <div><strong>{{ cartoon_count }}</strong><span>мультфильмов</span></div>
+      </div>
+    </section>
+
+    <section class="catalog-section" id="catalog">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">БИБЛИОТЕКА</p>
+          <h2>Весь каталог <span class="result-count">{{ page_obj.paginator.count }}</span></h2>
+        </div>
+        <a class="reset-link" href="{% url 'home' %}">Сбросить фильтры <span aria-hidden="true">↗</span></a>
+      </div>
+
+      <form class="filter-bar" method="get" action="{% url 'home' %}">
+        <label class="search-field">
+          <span class="search-icon" aria-hidden="true"></span>
+          <input type="search" name="q" value="{{ query }}" placeholder="Название, актёр, настроение" aria-label="Поиск по каталогу">
+        </label>
+        <label class="select-field">
+          <span class="visually-hidden">Тип</span>
+          <select name="type" aria-label="Тип">
+            <option value="">Все форматы</option>
+            <option value="movie" {% if selected_type == 'movie' %}selected{% endif %}>Фильмы</option>
+            <option value="series" {% if selected_type == 'series' %}selected{% endif %}>Сериалы</option>
+            <option value="cartoon" {% if selected_type == 'cartoon' %}selected{% endif %}>Мультфильмы</option>
+          </select>
+        </label>
+        <label class="select-field genre-select">
+          <span class="visually-hidden">Жанр</span>
+          <select name="genre" aria-label="Жанр">
+            <option value="">Все жанры</option>
+            {% for genre in genres %}
+              <option value="{{ genre.slug }}" {% if selected_genre == genre.slug %}selected{% endif %}>{{ genre.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="select-field sort-select">
+          <span class="visually-hidden">Сортировка</span>
+          <select name="sort" aria-label="Сортировка">
+            <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>Сначала новые</option>
+            <option value="oldest" {% if selected_sort == 'oldest' %}selected{% endif %}>Сначала старые</option>
+            <option value="rating" {% if selected_sort == 'rating' %}selected{% endif %}>По рейтингу</option>
+            <option value="title" {% if selected_sort == 'title' %}selected{% endif %}>По названию</option>
+          </select>
+        </label>
+        <button class="filter-submit" type="submit" aria-label="Применить фильтры">Найти <span aria-hidden="true">→</span></button>
+      </form>
+
+      {% if page_obj.object_list %}
+        <div class="movie-grid">
+          {% for movie in page_obj %}
+            <article class="movie-card">
+              <a class="poster-link" href="{% url 'web-movie-detail' movie.slug %}" aria-label="Открыть: {{ movie.title }}">
+                {% if movie.poster %}
+                  <img class="poster-image" src="{{ movie.poster.url }}" alt="Постер: {{ movie.title }}" loading="lazy">
+                {% else %}
+                  <div class="poster-art {% cycle 'art-archive' 'art-clouds' 'art-signal' 'art-harbor' %}" aria-hidden="true">
+                    <span class="poster-kicker">КАДР / {{ movie.year }}</span>
+                    <span class="poster-graphic"></span>
+                    <span class="poster-title">{{ movie.title }}</span>
+                    <span class="poster-caption">{{ movie.original_title }}</span>
+                  </div>
+                {% endif %}
+                <span class="format-tag">{% if movie.type == 'series' %}СЕРИАЛ{% elif movie.type == 'cartoon' %}МУЛЬТФИЛЬМ{% else %}ФИЛЬМ{% endif %}</span>
+                {% if movie.rating_avg %}<span class="rating-tag">★ {{ movie.rating_avg|floatformat:1 }}</span>{% endif %}
+              </a>
+              <div class="movie-meta">
+                <div class="movie-title-row">
+                  <h3><a href="{% url 'web-movie-detail' movie.slug %}">{{ movie.title }}</a></h3>
+                  <span class="movie-year">{{ movie.year }}</span>
+                </div>
+                <p class="genre-line">{% for genre in movie.genres.all %}{{ genre.name }}{% if not forloop.last %}<span> · </span>{% endif %}{% empty %}Жанр не указан{% endfor %}</p>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <span class="empty-mark">∅</span>
+          <h3>Ничего не нашлось</h3>
+          <p>Попробуйте изменить запрос или сбросить фильтры.</p>
+          <a class="text-link" href="{% url 'home' %}">Показать весь каталог <span aria-hidden="true">→</span></a>
+        </div>
+      {% endif %}
+
+      {% if page_obj.has_other_pages %}
+        <nav class="pagination" aria-label="Страницы каталога">
+          {% if page_obj.has_previous %}
+            <a href="?q={{ query|urlencode }}&type={{ selected_type }}&genre={{ selected_genre }}&sort={{ selected_sort }}&page={{ page_obj.previous_page_number }}" aria-label="Предыдущая страница">←</a>
+          {% endif %}
+          <span>Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+          {% if page_obj.has_next %}
+            <a href="?q={{ query|urlencode }}&type={{ selected_type }}&genre={{ selected_genre }}&sort={{ selected_sort }}&page={{ page_obj.next_page_number }}" aria-label="Следующая страница">→</a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="brand brand-small" href="{% url 'home' %}"><span class="brand-mark">К</span><span>кадр<span class="brand-period">.</span></span></a>
+    <span>Найти историю по душе.</span>
+    <a href="/api/core/health/">API <span aria-hidden="true">↗</span></a>
+  </footer>
+</body>
+</html>
