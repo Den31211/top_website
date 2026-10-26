@@ -14,11 +14,29 @@ class MovieListItemSerializer(serializers.ModelSerializer):
         source='movie',
         write_only=True,
     )
-
+    movie_list_id = serializers.PrimaryKeyRelatedField(
+        queryset=MovieList.objects.all(),
+        source='movie_list',
+        write_only=True,)
     class Meta:
         model = MovieListItem
-        fields = ['id', 'movie', 'movie_id', 'position', 'comment', 'added_at']
+        fields = ['id', 'movie', 'movie_id', 'position', 'comment', 'added_at', 'movie_list_id']
         read_only_fields = ['id', 'added_at']
+
+    def validate_movie_list_id(self, movie_list):
+        request = self.context.get('request')
+
+        if request is None or not request.user.is_authenticated:
+            raise serializers.ValidationError(
+                'Для добавления элемента необходимо войти в систему.'
+            )
+
+        if movie_list.owner_id != request.user.id:
+            raise serializers.ValidationError(
+                'Нельзя добавлять элементы в чужой список.'
+            )
+
+        return movie_list
 
 
 # ---------- Список ----------
