@@ -57,6 +57,7 @@ class CatalogPageTests(TestCase):
 			'username': 'viewer',
 			'password1': 'StrongTestPass123!',
 			'password2': 'StrongTestPass123!',
+			'email': 'viewer@example.com',
 		})
 
 		self.assertRedirects(response, reverse('home'))
@@ -66,11 +67,12 @@ class CatalogPageTests(TestCase):
 	def test_login_authenticates_existing_user(self):
 		get_user_model().objects.create_user(
 			username='returning-viewer',
+			email='returning@example.com',
 			password='StrongTestPass123!',
 		)
 
 		response = self.client.post(reverse('account-login'), {
-			'username': 'returning-viewer',
+			'username': 'returning@example.com',
 			'password': 'StrongTestPass123!',
 		})
 
