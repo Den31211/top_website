@@ -1,6 +1,5 @@
 from django.db import models
 from django.conf import settings
-from django.db import models
 from apps.movies.models import Movie
 from django.utils.text import slugify
 from django.db.models.signals import pre_save
